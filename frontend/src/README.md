@@ -8,6 +8,12 @@ This README documents the structure of the `src/` folder, the files that make ne
 - HTTP: `axios` is used directly in many places; a centralized `safeRequest` wrapper is available at `src/lib/api.js`.
 - Key UX helpers: `src/components/Loading.jsx`, `src/components/ErrorAlert.jsx`.
 
+## Changes in this branch
+- Added `safeRequest` wrapper and `Loading`/`ErrorAlert` components to standardize API error handling and display friendly loading/error states.
+- Converted several fetch calls to use `safeRequest` and added guards to avoid calling APIs when `NEXT_PUBLIC_API_BASE_URL` or required params are missing.
+- Note: Several routes in the project return 404 because the corresponding models and views are missing from this repository; the UI handles these errors gracefully by showing friendly messages.
+- Env keys used: `NEXT_PUBLIC_API_BASE_URL` (ensure it is set in `.env.local`).
+
 ## How to run (frontend)
 - Install: `npm install` (in `frontend/`)
 - Start dev server: `npm run dev`

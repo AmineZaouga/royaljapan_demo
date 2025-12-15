@@ -1,41 +1,46 @@
 "use client";
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { safeRequest } from '@/lib/api';
+import Loading from '@/components/Loading';
+import ErrorAlert from '@/components/ErrorAlert';
 const baseurl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 function PageSetting(props) {
   const [imgurl, setImgurl] = useState("");
   const [displayData, setDisplayData] = useState({});
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(false)
+  const [errorMsg, setErrorMsg] = useState("")
+
   useEffect(() => {
     getPageData();
   }, []);
   useEffect(() => {
     displayData;
   }, [displayData]);
-  const getPageData = () => {
-    var userData = JSON.parse(localStorage.getItem("userData")) || null;
-    var token = userData.token;
-    let config = {
-      method: "get",
-      url: `${baseurl}/api/get-page-data`,
-      headers: {
-        Authorization: "Bearer " + token,
-      },
-    };
-    axios(config)
-      .then((response) => {
-        let tmp_data = {};
-        response.data.settings.forEach((element) => {
-          tmp_data = { ...tmp_data, [element.key]: element.value };
-        });
-        setDisplayData(tmp_data);
-      })
-      .catch((err) => {
-        if (err.response.status == 401) {
-          localStorage.clear();
-          window.location.assign("/login");
-        }
-      });
+  const getPageData = async () => {
+    setLoading(true)
+    setError(false)
+    const userData = JSON.parse(localStorage.getItem("userData")) || null;
+    const token = userData?.token;
+    const res = await safeRequest({ method: "get", url: `${baseurl}/api/get-page-data`, headers: { Authorization: "Bearer " + token } });
+    setLoading(false)
+    if(!res.ok){
+      if(res.status==401){
+        localStorage.clear();
+        window.location.assign('/login')
+        return
+      }
+      setError(true)
+      setErrorMsg(res.error || 'Failed to load page settings')
+      return
+    }
+    let tmp_data = {};
+    res.data.settings.forEach((element) => {
+      tmp_data = { ...tmp_data, [element.key]: element.value };
+    });
+    setDisplayData(tmp_data);
   };
   const handleUpdate = (key) => {
     var userData = JSON.parse(localStorage.getItem("userData")) || null;

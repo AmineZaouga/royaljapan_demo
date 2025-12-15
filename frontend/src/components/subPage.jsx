@@ -2,6 +2,9 @@
 // import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import { safeRequest } from '@/lib/api';
+import Loading from '@/components/Loading';
+import ErrorAlert from '@/components/ErrorAlert';
 import Footer from '../components/Footer';
 import Header from '../components/Header';
 import Sitemap from '../components/Sitemap';
@@ -12,37 +15,38 @@ function SubPage({page}) {
     useEffect(()=>{
         getPageData()
     },[])
-    const getPageData = (id)=>{
-        let config = {
-            method: 'get',
-            url: `${baseurl}/api/get-page-data`,
-        };
-        axios(config)
-            .then(async (response) => {
-                let tmp_data = {}
-                console.log(response.data)
-                response.data.settings.forEach(element => {
 
-                    tmp_data = {...tmp_data, [element.key]:element.value}
-                });
-                if(page=="specified")
-                {
-                    setTitle(tmp_data["specified-title"])
-                    setContent(tmp_data["specified-description"])
-                }
-                if(page=="personal"){
-                    setTitle(tmp_data["protected-title"])
-                    setContent(tmp_data["protected-description"])
-                }
-                if(page=="privacy"){
-                    setTitle(tmp_data["privacy-title"])
-                    setContent(tmp_data["privacy-title"])
-                }
-            })
-            .catch((err)=>{
-                console.log(err)
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState(false)
+    const [errorMsg, setErrorMsg] = useState("")
 
-            })
+    const getPageData = async (id)=>{
+        setLoading(true)
+        setError(false)
+        const res = await safeRequest({ method: 'get', url: `${baseurl}/api/get-page-data` })
+        setLoading(false)
+        if(!res.ok){
+            setError(true)
+            setErrorMsg(res.error || 'Failed to load page data')
+            return
+        }
+        let tmp_data = {}
+        res.data.settings.forEach(element => {
+            tmp_data = {...tmp_data, [element.key]:element.value}
+        });
+        if(page=="specified")
+        {
+            setTitle(tmp_data["specified-title"])
+            setContent(tmp_data["specified-description"])
+        }
+        if(page=="personal"){
+            setTitle(tmp_data["protected-title"])
+            setContent(tmp_data["protected-description"])
+        }
+        if(page=="privacy"){
+            setTitle(tmp_data["privacy-title"])
+            setContent(tmp_data["privacy-title"])
+        }
     }
 
     return(

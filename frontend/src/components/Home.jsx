@@ -3,9 +3,50 @@ import axios from "axios";
 import { useRouter } from "next/navigation";
 const baseurl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-function Home({ userid, username, products, coupons, sellCount, profit }) {
+function Home({ userid, username, products = [], coupons = [], sellCount, profit, loading = false, error = false, errorMsg = "", onRetry }) {
   // const navigate = useNavigate()
   const router = useRouter();
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="container">
+        <div className="title">
+          <p>Loading...</p>
+        </div>
+        <div className="card">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} className="product-card skeleton">
+              <div className="product-card-title">&nbsp;</div>
+              <div className="product-card-items">
+                <div className="product-card-item-name">&nbsp;</div>
+                <div className="product-card-item-balance">&nbsp;</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="container">
+        <div className="title">
+          <p style={{ color: "red" }}>エラー: {errorMsg || "データを取得できませんでした。"}</p>
+        </div>
+        <div className="card">
+          <div className="product-card">
+            <p>問題が発生しました。接続を確認してください。</p>
+            <button onClick={onRetry} className="product-card-change">
+              再試行
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
   const handleUpdate = (price_id) => {
     var userData = JSON.parse(localStorage.getItem("userData")) || null;
     var token = userData.token;
@@ -81,73 +122,82 @@ function Home({ userid, username, products, coupons, sellCount, profit }) {
           </button>
         </div>
 
-        {products.map((item, index) => (
-          <div key={index} className="product-card">
-            <div className="product-card-title">{item.title}</div>
-            <div className="product-card-items">
-              <div className="product-card-item-name">商品定価</div>
-              <div className="product-card-item-balance">
-                <input
-                  id={`price-${item.id}`}
-                  type="text"
-                  defaultValue={parseInt(item.price_sell)
-                    .toLocaleString("en-US")
-                    .toString()}
-                />
-              </div>
-              <div className="product-card-item-unit">円</div>
-              <div className="product-card-change">変更可</div>
-            </div>
-            <p style={{ color: "red", marginTop: "-25px", textAlign: "right" }}>
-              数値を変更するときは、カンマを入れずに
-              <br />
-              入力して「更新」ボタンを押してください。
+        {products.length === 0 ? (
+          <div className="product-card">
+            <div className="product-card-title">商品が見つかりません</div>
+            <p style={{ marginTop: 10 }}>
+              現在、表示できる商品がありません。後で再読み込みしてみてください。
             </p>
-            <div className="product-card-items">
-              <div className="product-card-item-name">仕入れ価格</div>
-              <div className="product-card-item-balance">
-                <input
-                  type="text"
-                  defaultValue={parseInt(item.price_origin)
-                    .toLocaleString("en-US")
-                    .toString()}
-                />
-              </div>
-              <div className="product-card-item-unit">円</div>
-              <div className="product-card-change impossible">変更不可</div>
-            </div>
-
-            <div className="product-card-rank">
-              <div className="product-card-blank"></div>
-              <p>
-                仕入れ価格はあなたの販売実績に応じて変動します
-                <br />
-                現在のあなたのランク：<strong>ブロンズ</strong>
-              </p>
-            </div>
-            <div className="product-card-items">
-              <div className="product-card-item-name">販売時の利益</div>
-              <div className="product-card-item-balance">
-                <input
-                  type="text"
-                  defaultValue={parseInt(item.price_sell - item.price_origin)
-                    .toLocaleString("en-US")
-                    .toString()}
-                />
-              </div>
-              <div className="product-card-item-unit">円</div>
-              <div className="product-card-change impossible">変更不可</div>
-            </div>
-            <button
-              className="product-card-change"
-              onClick={() => {
-                handleUpdate(item.id);
-              }}
-            >
-              更新
-            </button>
           </div>
-        ))}
+        ) : (
+          products.map((item, index) => (
+            <div key={index} className="product-card">
+              <div className="product-card-title">{item.title}</div>
+              <div className="product-card-items">
+                <div className="product-card-item-name">商品定価</div>
+                <div className="product-card-item-balance">
+                  <input
+                    id={`price-${item.id}`}
+                    type="text"
+                    defaultValue={parseInt(item.price_sell)
+                      .toLocaleString("en-US")
+                      .toString()}
+                  />
+                </div>
+                <div className="product-card-item-unit">円</div>
+                <div className="product-card-change">変更可</div>
+              </div>
+              <p style={{ color: "red", marginTop: "-25px", textAlign: "right" }}>
+                数値を変更するときは、カンマを入れずに
+                <br />
+                入力して「更新」ボタンを押してください。
+              </p>
+              <div className="product-card-items">
+                <div className="product-card-item-name">仕入れ価格</div>
+                <div className="product-card-item-balance">
+                  <input
+                    type="text"
+                    defaultValue={parseInt(item.price_origin)
+                      .toLocaleString("en-US")
+                      .toString()}
+                  />
+                </div>
+                <div className="product-card-item-unit">円</div>
+                <div className="product-card-change impossible">変更不可</div>
+              </div>
+
+              <div className="product-card-rank">
+                <div className="product-card-blank"></div>
+                <p>
+                  仕入れ価格はあなたの販売実績に応じて変動します
+                  <br />
+                  現在のあなたのランク：<strong>ブロンズ</strong>
+                </p>
+              </div>
+              <div className="product-card-items">
+                <div className="product-card-item-name">販売時の利益</div>
+                <div className="product-card-item-balance">
+                  <input
+                    type="text"
+                    defaultValue={parseInt(item.price_sell - item.price_origin)
+                      .toLocaleString("en-US")
+                      .toString()}
+                  />
+                </div>
+                <div className="product-card-item-unit">円</div>
+                <div className="product-card-change impossible">変更不可</div>
+              </div>
+              <button
+                className="product-card-change"
+                onClick={() => {
+                  handleUpdate(item.id);
+                }}
+              >
+                更新
+              </button>
+            </div>
+          ))
+        )}
         <div className="product-card">
           <div className="product-card-title">紹介コード</div>
           {coupons.map((item, index) => (

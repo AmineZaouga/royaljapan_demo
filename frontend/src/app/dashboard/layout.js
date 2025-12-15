@@ -10,8 +10,6 @@ import Link from "next/link";
 
 const baseurl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-console.log(hi);
-
 export default function Layout({ children }) {
   const pathname = usePathname();
   const [userData, setUserData] = useState(null);
@@ -34,11 +32,28 @@ export default function Layout({ children }) {
   const [sellCount, setSellCount] = useState(0);
   const [profit, setProfit] = useState(0);
 
+  // Loading and error state for fetch
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
   useEffect(() => {
     getData();
   }, []);
 
   const getData = () => {
+    // Reset state
+    setError(false);
+    setErrorMsg("");
+    setLoading(true);
+
+    if (!baseurl) {
+      setLoading(false);
+      setError(true);
+      setErrorMsg("API base URL is not configured. Please set NEXT_PUBLIC_API_BASE_URL in .env.local");
+      return;
+    }
+
     var userData = JSON.parse(localStorage.getItem("userData")) || null;
     var token = userData?.token;
     let config = {
@@ -68,13 +83,20 @@ export default function Layout({ children }) {
           setProfit(profit_tmp);
           setSellCount(sellcount_tmp);
         }
+        setLoading(false);
       })
       .catch((err) => {
-        // setError(true);
-        // setErrorMsg("ユーザーが見つかりません。");
-        if (err.response.status == 401) {
-          localStorage.clear();
-          window.location.assign("/login");
+        setLoading(false);
+        setError(true);
+        if (err?.response) {
+          if (err.response.status == 401) {
+            localStorage.clear();
+            window.location.assign("/login");
+            return;
+          }
+          setErrorMsg(err.response.data?.message || `Server responded with status ${err.response.status}`);
+        } else {
+          setErrorMsg(err.message || "Network error while fetching data.");
         }
       });
   };
@@ -151,6 +173,10 @@ export default function Layout({ children }) {
             sellCount={sellCount}
             profit={profit}
             coupons={coupons}
+            loading={loading}
+            error={error}
+            errorMsg={errorMsg}
+            onRetry={getData}
           />
         )}
       </main>

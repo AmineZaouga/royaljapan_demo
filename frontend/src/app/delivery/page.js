@@ -2,6 +2,9 @@
 // import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import { safeRequest } from '@/lib/api';
+import Loading from '@/components/Loading';
+import ErrorAlert from '@/components/ErrorAlert';
 import Footer from '../../components/Footer';
 import Header from '../../components/Header';
 import Sitemap from '../../components/Sitemap';
@@ -9,26 +12,24 @@ const baseurl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 function DeliveryPage() {
     const [displayData, setDisplayData] = useState({})
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState(false)
+    const [errorMsg, setErrorMsg] = useState("")
+
     useEffect(()=>{
         getPageData()
     },[])
-    const getPageData = (id)=>{
-        let config = {
-            method: 'get',
-            url: `${baseurl}/api/get-page-data`,
-        };
-        axios(config)
-            .then(async (response) => {
-                let tmp_data = {}
-                response.data.settings.forEach(element => {
-                    tmp_data = {...tmp_data, [element.key]:element.value}
+    const getPageData = async (id)=>{
+        setLoading(true); setError(false)
+        const res = await safeRequest({ method: 'get', url: `${baseurl}/api/get-page-data` })
+        setLoading(false)
+        if(!res.ok){ setError(true); setErrorMsg(res.error || 'Failed to load'); return }
+        let tmp_data = {}
+        res.data.settings.forEach(element => {
+            tmp_data = {...tmp_data, [element.key]:element.value}
 
-                });
-                setDisplayData(tmp_data)
-            })
-            .catch((err)=>{
-
-            })
+        });
+        setDisplayData(tmp_data)
     }
 
     return(
